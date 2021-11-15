@@ -1,6 +1,7 @@
 #include<Adafruit_NeoPixel.h>
 #include"headers/sample.h"
 
+
 #define LED_CNT 16
 #define DATA_PIN 2
 #define GND_PIN 4

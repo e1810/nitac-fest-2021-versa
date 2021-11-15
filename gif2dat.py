@@ -3,6 +3,7 @@
 import cv2
 import os
 import math
+from shutil import rmtree
 from PIL import Image
 
 #配列設定
@@ -18,10 +19,10 @@ Led0Bright = 3 #中心LEDの輝度 [%]
 # Gifファイルを読み込む
 # 参考 https://www.tech-tech.xyz/gif-divide.html
 gif_file_name = input('input file name without .gif: ')
-gif = cv2.VideoCapture('gifs/' + gif_file_name + '.gif')
+gif = cv2.VideoCapture('input_gifs/' + gif_file_name + '.gif')
 
 #ファイル作成
-file = open('headers/' + gif_file_name + '.h', 'w')
+file = open('versa/headers/' + gif_file_name + '.h', 'w')
 file.write('#define Frame ' + str(Frame) + '\n')
 file.write('#define NUMPIXELS ' + str(NUMPIXELS) + '\n')
 file.write('#define Div ' + str(Div) + '\n' + '\n')
@@ -100,7 +101,7 @@ for i in range(Frame):
     #変換
     polarConv(img_path, i)
     
-
+rmtree('./screen_caps/')
 
 file.write('};' + '\n' + '\n')
 file.close()
