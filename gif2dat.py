@@ -1,107 +1,94 @@
-# -*- coding: utf-8 -*-
-
 import cv2
 import os
 import math
+import numpy as np
 from shutil import rmtree
 from PIL import Image
 
-#配列設定
-Frame = 25 #フレーム数
-NUMPIXELS = 16 #LEDの数
-Div = 36 #１周の分割数
+LED_COUNT = 16
+DEG_STEP = 6
+DIV_COUNT = len(range(0, 360, DEG_STEP))
 
 
-Bright = 30 #輝度
-Led0Bright = 3 #中心LEDの輝度 [%]
+def img2dat(img):
+    w, h, c = img.shape
+    radius = min(h, w) // 2
+    ret = []
+    for deg in range(0, 360, DEG_STEP):
+        degree = deg * np.pi/180
+        line = []
+        for i in range(LED_COUNT):
+            x = int(radius * i/LED_COUNT * math.cos(degree) + h//2)
+            y = int(radius * i/LED_COUNT * math.sin(degree) + w//2)
+            b, g, r = img[y, x]
+            if b==0 and g==0 and r==0: line.append(65793)
+            else: line.append( (r<<16) + (g<<8) + (b<<0) )
+        ret.append(line)
+    return ret
 
 
-# Gifファイルを読み込む
-# 参考 https://www.tech-tech.xyz/gif-divide.html
-gif_file_name = input('input file name without .gif: ')
-gif = cv2.VideoCapture('input_gifs/' + gif_file_name + '.gif')
-
-#ファイル作成
-file = open('versa/headers/' + gif_file_name + '.h', 'w')
-file.write('#define Frame ' + str(Frame) + '\n')
-file.write('#define NUMPIXELS ' + str(NUMPIXELS) + '\n')
-file.write('#define Div ' + str(Div) + '\n' + '\n')
-#file.write('#define Frame ' + str(Frame) + '\n' + '\n')
-
-
-file.write('const uint32_t pic [Frame][Div][NUMPIXELS] = {' + '\n')
-
-
-
-#画像変換関数
-def polarConv(pic, i):
-    imgOrgin = cv2.imread(pic) #画像データ読み込み
-    
-    h, w, _ = imgOrgin.shape #画像サイズ取得
-
-    #画像縮小
-    imgRedu = cv2.resize(imgOrgin,(math.floor((NUMPIXELS * 2 -1)/h *w), NUMPIXELS * 2 -1))
-    #cv2.imwrite(str(i) + '-resize.jpg',imgRedu)
-
-    #縮小画像中心座標
-    h2, w2, _ = imgRedu.shape
-    wC = math.floor(w2 / 2)
-    hC = math.floor(h2 / 2)
-
-    #極座標変換画像準備
-    imgPolar = Image.new('RGB', (NUMPIXELS, Div))
+def virtual_versawrite(data, radius):
+    img = np.zeros((2*radius, 2*radius, 3), dtype='uint8')
+    for i in range(DIV_COUNT):
+        degree = (i*DEG_STEP) * np.pi/180
+        for j in range(LED_COUNT):
+            x = int(radius * j/LED_COUNT * math.cos(degree) + radius)
+            y = int(radius * j/LED_COUNT * math.sin(degree) + radius)
+            for nx in range(x-radius//90, x+radius//90):
+                for ny in range(y-radius//90, y+radius//90):
+                    if nx<0 or 2*radius<=nx or ny<0 or 2*radius<=ny: continue
+                    for k in range(3):
+                        img[ny, nx, k] = (data[i][j] >> (8*k)) & 0b11111111
+    cv2.imshow('versa', img)
+    cv2.waitKey(0)
 
 
-    #極座標変換
-    file.write('\t{\n')
-    for j in range(0, Div):
-        file.write('\t\t{')
-        for i in range(0, hC+1):
-            #座標色取得
-            #参考：http://peaceandhilightandpython.hatenablog.com/entry/2016/01/03/151320
-            rP = int(imgRedu[hC + math.ceil(i * math.cos(2*math.pi/Div*j)),
-                         wC - math.ceil(i * math.sin(2*math.pi/Div*j)), 2]
-                     * ((100 - Led0Bright) / NUMPIXELS * i + Led0Bright) / 100 * Bright /100)
-            gP = int(imgRedu[hC + math.ceil(i * math.cos(2*math.pi/Div*j)),
-                         wC - math.ceil(i * math.sin(2*math.pi/Div*j)), 1]
-                     * ((100 - Led0Bright) / NUMPIXELS * i + Led0Bright) / 100 * Bright /100)
-            bP = int(imgRedu[hC + math.ceil(i * math.cos(2*math.pi/Div*j)),
-                         wC - math.ceil(i * math.sin(2*math.pi/Div*j)), 0]
-                     * ((100 - Led0Bright) / NUMPIXELS * i + Led0Bright) / 100 * Bright /100)
-            
-            file.write('0x%02X%02X%02X' % (rP,gP,bP))
-            
-            if i == hC:
-                file.write('},\n')
-            else:
-                file.write(', ')
-                
-            imgPolar.putpixel((i,j), (rP, gP, bP))
-    file.write('\t},\n\n')
+def main():
+    filename = input('input file name without .gif: ')
+
+    # load data for each frame
+    gif = cv2.VideoCapture('input_gifs/' + filename + '.gif')
+    frame_cnt = 0
+    data = []
+    dir_name = "screen_caps"
+    if not os.path.exists(dir_name):
+        os.mkdir(dir_name)
+    while True:
+        is_success, frame = gif.read()
+        if not is_success: break
+        #virtual_versawrite(frame)
+        img_name = str(frame_cnt) + ".jpg"
+        img_path = os.path.join(dir_name, img_name)
+        cv2.imwrite(img_path, frame)
+        data.append(img2dat(frame))
+        frame_cnt += 1
+
+    # ---- DEBUG PRINT ----
+    for i in range(frame_cnt):
+        img = cv2.imread('screen_caps/' + str(i) + '.jpg')
+        cv2.imshow(str(i+1) + '/' + frame_cnt, img)
+        virtual_versawrite(data[i], min(img.shape[0], img.shape[1])//2)
+    # ---- END DEBUG ----
+    rmtree('./screen_caps/')
+
+    # output header file
+    f = open('writeLight/headers/' + filename + '.h', 'w')
+    f.write('#define Frame ' + str(frame_cnt) + '\n')
+    f.write('#define DEG_CNT ' + str(DIV_COUNT) + '\n' + '\n')
+    f.write('#define NUMPIXELS ' + str(LED_COUNT) + '\n')
+    f.write('const uint32_t pic [Frame][DEG_CNT][NUMPIXELS] = {' + '\n')
+    for i in range(frame_cnt):
+        f.write('\t{\n')
+        for j in range(DIV_COUNT):
+            f.write('\t\t{')
+            for k in range(LED_COUNT):
+                f.write(str(data[i][j][k]));
+                if k==LED_COUNT-1: f.write('}')
+                else: f.write(', ')
+            if j==DIV_COUNT-1: f.write('\n\t}')
+            else: f.write(',\n')
+        if i==frame_cnt-1: f.write('};\n')
+        else: f.write(',\n')
 
 
-
-# スクリーンキャプチャを保存するディレクトリを生成
-dir_name = "screen_caps"
-if not os.path.exists(dir_name):
-    os.mkdir(dir_name)
-
-
-for i in range(Frame):
-    is_success, frame = gif.read()
-    if not is_success:
-        print('constant Frame icchisitenaiyo')
-        exit(1)
-
-    # 画像ファイルに書き出す
-    img_name = str(i) + ".jpg"
-    img_path = os.path.join(dir_name, img_name)
-    cv2.imwrite(img_path, frame)
-
-    #変換
-    polarConv(img_path, i)
-    
-rmtree('./screen_caps/')
-
-file.write('};' + '\n' + '\n')
-file.close()
+if __name__=='__main__': main()

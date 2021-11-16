@@ -1,5 +1,5 @@
 #include<Adafruit_NeoPixel.h>
-#include"headers/sample.h"
+#include"headers/bomb.h"
 
 
 #define LED_CNT 16
@@ -21,13 +21,12 @@ void setup()
 
 void loop()
 {
-   uint32_t tmp_color;
-   for(int deg=0; deg<36; deg++){
+   for(int deg=0; deg<180; deg++){
        for(int i=0; i<LED_CNT; i++){
-           tmp_color = pic[0][deg][i];
-           pixels.setPixelColor(i, tmp_color);
+           pixels.setPixelColor(i, pic[0][deg][i]);
        }
+       pixels.show();
    }
-   pixels.show();
+   
    delay(1000);
 }
