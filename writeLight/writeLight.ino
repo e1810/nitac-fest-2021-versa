@@ -21,9 +21,9 @@ void setup()
 
 void loop()
 {
-   for(int deg=0; deg<180; deg++){
+   for(int deg=0; deg<360; deg++){
        for(int i=0; i<LED_CNT; i++){
-           pixels.setPixelColor(i, pic[0][deg][i]);
+           pixels.setPixelColor(i, pic[0][deg/6][i]);
        }
        pixels.show();
    }

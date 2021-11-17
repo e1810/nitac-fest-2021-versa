@@ -6,7 +6,7 @@ from shutil import rmtree
 from PIL import Image
 
 LED_COUNT = 16
-DEG_STEP = 6
+DEG_STEP = 1
 DIV_COUNT = len(range(0, 360, DEG_STEP))
 
 
@@ -56,17 +56,16 @@ def main():
     while True:
         is_success, frame = gif.read()
         if not is_success: break
-        #virtual_versawrite(frame)
         img_name = str(frame_cnt) + ".jpg"
         img_path = os.path.join(dir_name, img_name)
-        cv2.imwrite(img_path, frame)
         data.append(img2dat(frame))
+        cv2.imwrite(img_path, frame)
         frame_cnt += 1
 
     # ---- DEBUG PRINT ----
     for i in range(frame_cnt):
         img = cv2.imread('screen_caps/' + str(i) + '.jpg')
-        cv2.imshow(str(i+1) + '/' + frame_cnt, img)
+        cv2.imshow('original', img)
         virtual_versawrite(data[i], min(img.shape[0], img.shape[1])//2)
     # ---- END DEBUG ----
     rmtree('./screen_caps/')
