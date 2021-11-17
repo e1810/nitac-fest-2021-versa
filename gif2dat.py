@@ -20,9 +20,9 @@ def img2dat(img):
         for i in range(LED_COUNT):
             x = int(radius * i/LED_COUNT * math.cos(degree) + h//2)
             y = int(radius * i/LED_COUNT * math.sin(degree) + w//2)
-            b, g, r = img[y, x]
-            if b==0 and g==0 and r==0: line.append(65793)
-            else: line.append( (r<<16) + (g<<8) + (b<<0) )
+            b, g, r = map(lambda x: 64*x//255, img[y, x])
+            #if b==0 and g==0 and r==0: line.append([64, 64, 64])
+            line.append([r, g, b])
         ret.append(line)
     return ret
 
@@ -38,7 +38,7 @@ def virtual_versawrite(data, radius):
                 for ny in range(y-radius//90, y+radius//90):
                     if nx<0 or 2*radius<=nx or ny<0 or 2*radius<=ny: continue
                     for k in range(3):
-                        img[ny, nx, k] = (data[i][j] >> (8*k)) & 0b11111111
+                        img[ny, nx, k] = 255*data[i][j][2-k]//64
     cv2.imshow('versa', img)
     cv2.waitKey(0)
 
@@ -75,13 +75,13 @@ def main():
     f.write('#define Frame ' + str(frame_cnt) + '\n')
     f.write('#define DEG_CNT ' + str(DIV_COUNT) + '\n' + '\n')
     f.write('#define NUMPIXELS ' + str(LED_COUNT) + '\n')
-    f.write('const uint32_t pic [Frame][DEG_CNT][NUMPIXELS] = {' + '\n')
+    f.write('const uint32_t pic [Frame][DEG_CNT][NUMPIXELS][3] = {' + '\n')
     for i in range(frame_cnt):
         f.write('\t{\n')
         for j in range(DIV_COUNT):
             f.write('\t\t{')
             for k in range(LED_COUNT):
-                f.write(str(data[i][j][k]));
+                f.write('{' + ','.join(map(str,data[i][j][k])) + '}');
                 if k==LED_COUNT-1: f.write('}')
                 else: f.write(', ')
             if j==DIV_COUNT-1: f.write('\n\t}')
