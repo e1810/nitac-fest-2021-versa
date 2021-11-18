@@ -6,7 +6,7 @@ from shutil import rmtree
 from PIL import Image
 
 LED_COUNT = 16
-DEG_STEP = 1
+DEG_STEP = 5
 DIV_COUNT = len(range(0, 360, DEG_STEP))
 
 
@@ -20,9 +20,9 @@ def img2dat(img):
         for i in range(LED_COUNT):
             x = int(radius * i/LED_COUNT * math.cos(degree) + h//2)
             y = int(radius * i/LED_COUNT * math.sin(degree) + w//2)
-            b, g, r = map(lambda x: 64*x//255, img[y, x])
-            #if b==0 and g==0 and r==0: line.append([64, 64, 64])
-            line.append([r, g, b])
+            b, g, r = map(lambda x: 128*x//255, img[y, x])
+            if b>70 and g>70 and r>70: line.append([0,0,0])
+            else: line.append([r, g, b])
         ret.append(line)
     return ret
 
@@ -38,7 +38,7 @@ def virtual_versawrite(data, radius):
                 for ny in range(y-radius//90, y+radius//90):
                     if nx<0 or 2*radius<=nx or ny<0 or 2*radius<=ny: continue
                     for k in range(3):
-                        img[ny, nx, k] = 255*data[i][j][2-k]//64
+                        img[ny, nx, k] = 255*data[i][j][2-k]//128
     cv2.imshow('versa', img)
     cv2.waitKey(0)
 

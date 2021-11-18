@@ -1,6 +1,7 @@
 #include<Adafruit_NeoPixel.h>
-#include"headers/rainbow.h"
+#include"headers/apple.h"
 
+#define DEG_STEP 5
 #define LED_CNT 16
 #define DATA_PIN 2
 #define GND_PIN 4
@@ -20,13 +21,14 @@ void setup()
 
 void loop()
 {
-   for(int deg=0; deg<360; deg+=2){
+   for(int deg=0; deg<360; deg+=DEG_STEP){
        for(int i=0; i<LED_CNT; i++){
-           int8_t r = pic[0][deg][i][0];
-           int8_t g = pic[0][deg][i][1];
-           int8_t b = pic[0][deg][i][2];
+           int8_t r = pic[0][deg/DEG_STEP][i][0];
+           int8_t g = pic[0][deg/DEG_STEP][i][1];
+           int8_t b = pic[0][deg/DEG_STEP][i][2];
            pixels.setPixelColor(i, pixels.Color(r, g, b));
        }
+       delay(2);
        pixels.show();
    }
    
