@@ -9,6 +9,7 @@ LED_COUNT = 16
 LED_WIDTH = 20
 DEG_STEP = 6
 DIV_COUNT = len(range(0, 360, DEG_STEP))
+MAX_FRAME = 20
 
 
 def img2dat(img):
@@ -62,25 +63,26 @@ def main():
         if not is_success: break
         img_name = str(frame_cnt) + ".jpg"
         img_path = os.path.join(dir_name, img_name)
-        data.append(img2dat(frame))
         cv2.imwrite(img_path, frame)
         frame_cnt += 1
 
-    # ---- DEBUG PRINT ----
-    for i in range(frame_cnt):
+    used_frame_cnt = 0
+    for i in range(0, frame_cnt, math.ceil(frame_cnt/MAX_FRAME)):
         img = cv2.imread('screen_caps/' + str(i) + '.jpg')
         cv2.imshow('original', img)
-        virtual_versawrite(data[i], min(img.shape[0], img.shape[1])//2)
-    # ---- END DEBUG ----
+        data.append(img2dat(img))
+        used_frame_cnt += 1
+        virtual_versawrite(data[-1], min(img.shape[0], img.shape[1])//2)
+
     rmtree('./screen_caps/')
 
     # output header file
     f = open('writeLight/headers/' + filename + '.h', 'w')
-    f.write('const int FRAME_COUNT = ' + str(frame_cnt) + ';\n')
+    f.write('const int FRAME_COUNT = ' + str(used_frame_cnt) + ';\n')
     f.write('#define DEG_CNT ' + str(DIV_COUNT) + '\n')
     f.write('#define NUMPIXELS ' + str(LED_COUNT) + '\n')
     f.write('const uint32_t pic [FRAME_COUNT][DEG_CNT][NUMPIXELS][3] = {' + '\n')
-    for i in range(frame_cnt):
+    for i in range(used_frame_cnt):
         f.write('\t{\n')
         for j in range(DIV_COUNT):
             f.write('\t\t{')
@@ -90,7 +92,7 @@ def main():
                 else: f.write(', ')
             if j==DIV_COUNT-1: f.write('\n\t}')
             else: f.write(',\n')
-        if i==frame_cnt-1: f.write('};\n')
+        if i==used_frame_cnt-1: f.write('};\n')
         else: f.write(',\n')
 
 
