@@ -7,7 +7,7 @@ from PIL import Image
 
 LED_COUNT = 16
 LED_WIDTH = 20
-DEG_STEP = 5
+DEG_STEP = 6
 DIV_COUNT = len(range(0, 360, DEG_STEP))
 
 
@@ -20,8 +20,8 @@ def img2dat(img):
         line = []
         for i in range(LED_COUNT):
             num = i + 3 + (i>=8)
-            x = int(radius * num/LED_WIDTH * math.cos(degree) + h//2)
-            y = int(radius * num/LED_WIDTH * math.sin(degree) + w//2)
+            x = int(-radius * num/LED_WIDTH * math.cos(degree) + h//2)
+            y = int(+radius * num/LED_WIDTH * math.sin(degree) + w//2)
             b, g, r = map(lambda x: 128*x//255, img[y, x])
             #if b>70 and g>70 and r>70: line.append([0,0,0])
             #else:
@@ -36,8 +36,8 @@ def virtual_versawrite(data, radius):
         degree = (i*DEG_STEP) * np.pi/180
         for j in range(LED_COUNT):
             num = j + 3 + (j>=8)
-            x = int(radius * num/LED_WIDTH * math.cos(degree) + radius)
-            y = int(radius * num/LED_WIDTH * math.sin(degree) + radius)
+            x = int(-radius * num/LED_WIDTH * math.cos(degree) + radius)
+            y = int(+radius * num/LED_WIDTH * math.sin(degree) + radius)
             for nx in range(x-radius//90, x+radius//90):
                 for ny in range(y-radius//90, y+radius//90):
                     if nx<0 or 2*radius<=nx or ny<0 or 2*radius<=ny: continue
@@ -75,12 +75,11 @@ def main():
     rmtree('./screen_caps/')
 
     # output header file
-    f = open('writeLight/data/' + filename + '.dat', 'w')
-    f.write(str(frame_cnt) + ' ' + str(DIV_COUNT) + ' ' + str(LED_COUNT))
-    f.write('#define Frame ' + str(frame_cnt) + '\n')
-    f.write('#define DEG_CNT ' + str(DIV_COUNT) + '\n' + '\n')
+    f = open('writeLight/headers/' + filename + '.h', 'w')
+    f.write('const int FRAME_COUNT = ' + str(frame_cnt) + ';\n')
+    f.write('#define DEG_CNT ' + str(DIV_COUNT) + '\n')
     f.write('#define NUMPIXELS ' + str(LED_COUNT) + '\n')
-    f.write('const uint32_t pic [Frame][DEG_CNT][NUMPIXELS][3] = {' + '\n')
+    f.write('const uint32_t pic [FRAME_COUNT][DEG_CNT][NUMPIXELS][3] = {' + '\n')
     for i in range(frame_cnt):
         f.write('\t{\n')
         for j in range(DIV_COUNT):
