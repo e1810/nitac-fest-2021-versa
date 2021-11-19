@@ -1,5 +1,5 @@
 #include<Adafruit_NeoPixel.h>
-#include"headers/apple.h"
+#include"headers/jota.h"
 
 #define DEG_STEP 5
 #define LED_CNT 16
